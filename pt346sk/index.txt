@@ -1,0 +1,128 @@
+Hardware
+
+FCC approval filings suggest that Lab126 (Amazon's hardware R&D subsidiary) took the remote of the original (first generation) Fire TV as a start.
+Two rows of buttons were removed and there might have been some minor changes to the PCB but the main components remained the same.
+The resulting remote control PT346SK was sent to FCC for approval just a few months later.
+
+https://fccid.io/S59-1214/Internal-Photos/Internal-photos-2208898
+https://fccid.io/2ACBD-0610/Internal-Photos/Internal-photos-2429757
+
+Comparison
+"Amazon Fire TV Remote"
+Model: DU3560
+FFC ID: S59-1214
+Codename: Hurley
+PCB: 30-001021
+(Was sold with the first generation of Amazon Fire TV, model CL1130).
+
+"Alexa Voice Remote for Amazon Echo"
+Model: PT346SK
+FCC ID: 2ACBD-0610
+Codename: Scone
+PCB: 30-002129
+(Initially sent only to customers pre-ordering the original Amazon Echo smart speakers, model SK705DI).
+
+https://www.amazon.com/dp/B00DU0X4WI
+https://www.amazon.com/dp/B01E9AHU8Q
+
+
+MSP430F5435A
+https://www.ti.com/product/MSP430F5435A
+ 25-MHz MCU with 192-KB Flash, 16-KB SRAM
+
+CC2560A
+https://www.ti.com/product/CC2560
+
+
+
+Teardowns
+DU3560 teardown
+https://www.ifixit.com/Teardown/Amazon+Fire+TV+Teardown/23856#s61354
+
+PT346SK teardown
+(I have no free access to photo equipment to make high-resolution snaps. Uploading the best close shots I managed to capture via smartphone.)
+Kudos to https://www.youtube.com/@tooleater3562 for saving my remote:
+https://www.youtube.com/watch?v=_kfNWTzKmys
+ Echo Remote (DU3560) teardown dismantling (cracking open)
+
+
+Firmware/software
+
+Altough the BT chip supports BT 4.0 (BLE) the BT stack seems to be programmed to function as a Classic Bluetooth (BR/EDR) slave device only.
+It implements a HID keyboard and a Serial Port. Based on the service name the stack running on the MCU might be derived from Bluetopia by Stonestreet One.
+https://en.wikipedia.org/wiki/Stonestreet_One
+
+
+HCI level info
+$ hcitool info F4:5E:AB:xx:xx:xx
+Requesting information ...
+        BD Address:  F4:5E:AB:xx:xx:xx
+        OUI Company: Texas Instruments (F4-5E-AB)
+        Device Name: Amazon Remote
+        LMP Version: 4.0 (0x6) LMP Subversion: 0x1b3e
+        Manufacturer: Texas Instruments Inc. (13)
+        Features page 0: 0xff 0xfe 0x2d 0xfe 0xdb 0xff 0x7b 0x83
+                <3-slot packets> <5-slot packets> <encryption> <slot offset> 
+                <timing accuracy> <role switch> <hold mode> <sniff mode> 
+                <RSSI> <channel quality> <SCO link> <HV2 packets> 
+                <HV3 packets> <u-law log> <A-law log> <CVSD> <power control> 
+                <transparent SCO> <EDR ACL 2 Mbps> <EDR ACL 3 Mbps> 
+                <enhanced iscan> <interlaced iscan> <interlaced pscan> 
+                <inquiry with RSSI> <extended SCO> <EV4 packets> <EV5 packets> 
+                <AFH cap. slave> <AFH class. slave> <LE support> 
+                <3-slot EDR ACL> <5-slot EDR ACL> <sniff subrating> 
+                <pause encryption> <AFH cap. master> <AFH class. master> 
+                <EDR eSCO 2 Mbps> <EDR eSCO 3 Mbps> <3-slot EDR eSCO> 
+                <extended inquiry> <LE and BR/EDR> <simple pairing> 
+                <encapsulated PDU> <err. data report> <non-flush flag> <LSTO> 
+                <inquiry TX power> <extended features> 
+        Features page 1: 0x01 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+
+
+The following services are advertised via SDP:
+UUID 00001101-0000-1000-8000-00805f9b34fb (SerialPort) Serial Port Server Port 2
+UUID 00001124-0000-1000-8000-00805f9b34fb (HID) Stonestreet One Bluetooth Keyboard
+UUID 00001200-0000-1000-8000-00805f9b34fb (PnPInformation) Vendor 0x1949 (Lab126, Inc.), Device 0x0405 (Alexa Voice Remote for Echo)
+
+$ bluetoothctl info F4:5E:AB:xx:xx:xx
+Device F4:5E:AB:xx:xx:xx (public)
+        Name: Amazon Remote
+        Alias: Amazon Remote
+        Class: 0x0008050c
+        Paired: no
+        Trusted: yes
+        Blocked: no
+        Connected: yes
+        WakeAllowed: yes
+        LegacyPairing: yes
+        UUID: Serial Port               (00001101-0000-1000-8000-00805f9b34fb)
+        UUID: Human Interface Device... (00001124-0000-1000-8000-00805f9b34fb)
+        UUID: PnP Information           (00001200-0000-1000-8000-00805f9b34fb)
+        Modalias: bluetooth:v1949p0405d0001
+
+
+Service registration will need the full SDP records in XML, saved them as files.
+
+Attribute ID 0x0206 (HIDDescriptorList) reveals that it can report 17 special buttons:
+0x0B, 0x66, 0x00, 0x07, 0x00,  //   Usage (0x070066) => Power
+0x0B, 0xE2, 0x00, 0x0C, 0x00,  //   Usage (0x0C00E2) => Mute
+0x0B, 0x50, 0x00, 0x07, 0x00,  //   Usage (0x070050) => LeftArrow
+0x0B, 0xB4, 0x00, 0x0C, 0x00,  //   Usage (0x0C00B4) => Rewind
+0x0B, 0xE9, 0x00, 0x0C, 0x00,  //   Usage (0x0C00E9) => Volume Increment
+0x0B, 0xF1, 0x00, 0x07, 0x00,  //   Usage (0x0700F1) => ?? RESERVED ?? Back button ??
+0x0B, 0x58, 0x00, 0x07, 0x00,  //   Usage (0x070058) => Keypad_Enter
+0x0B, 0xCD, 0x00, 0x0C, 0x00,  //   Usage (0x0C00CD) => Play/Pause
+0x0B, 0x89, 0x00, 0x0C, 0x00,  //   Usage (0x0C0089) => Media Select TV
+0x0B, 0x52, 0x00, 0x07, 0x00,  //   Usage (0x070052) => UpArrow
+0x0B, 0x4F, 0x00, 0x07, 0x00,  //   Usage (0x07004F) => RightArrow
+0x0B, 0xB3, 0x00, 0x0C, 0x00,  //   Usage (0x0C00B3) => Fast Forward
+0x0B, 0xEA, 0x00, 0x0C, 0x00,  //   Usage (0x0C00EA) => Volume Decrement
+0x0B, 0x23, 0x02, 0x0C, 0x00,  //   Usage (0x0C0223) => AC_Home
+0x0B, 0x51, 0x00, 0x07, 0x00,  //   Usage (0x070051) => DownArrow
+0x0B, 0x40, 0x00, 0x0C, 0x00,  //   Usage (0x0C0040) => Menu
+0x0B, 0x21, 0x02, 0x0C, 0x00,  //   Usage (0x0C0221) => AC_Search
+
+Kudos to http://eleccelerator.com/usbdescreqparser/
+
+
+For some reason the device Friendly Name keeps changing on additional pairing tries.

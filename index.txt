@@ -1,0 +1,38 @@
+Project goal:
+Create a python3 application that can simulate an Amazon Echo Remote via bluez5 under Linux on a suitable bluetooth interface.
+
+Initially focusing on the button presses only.
+(Might move on and also learn how voice commands work. Eventually work out how a firmware update happens.)
+Turning it into a HA plugin would be nice but it might come at the price of shutting down all the functions available via BLE.
+(I have yet to find a way to restrict bluez5's bluetoothd to specific HCI interfaces only.)
+
+This one looks like the most promising code to start with:
+https://gist.github.com/ukBaz/a47e71e7b87fbc851b27cde7d1c0fcf0
+Derived from https://github.com/yaptb/BlogCode/tree/master/btkeyboard
+Which in turn was derived from http://liamfraser.co.uk/lud/PiTooth-Resources.zip
+
+Technical bits of the remote here.
+
+We can simulate the remote by removing all SDP records but the PNPInfo one.
+Most of these settings can only be changed on the system level.
+The python app can register the HID and the Serial Port entries later.
+
+Please note this step will stop all bluetooth input, etc devices from working (potentially your keyboard).
+WARNING! You might lose access to type to undo these changes. Make sure you have access to the system via methods other than a bluetooth keyboard.
+
+/etc/bluetooth/echo-bt-remote.conf:
+[General]
+ControllerMode = bredr
+Class = 0x0008050c
+Name = 'Remote 1'
+DeviceID = bluetooth:1949:0405:0001
+
+# systemctl edit bluetooth
+/etc/systemd/system/bluetooth.service.d/override.conf:
+[Service]
+ExecStart=
+#ExecStart=/usr/lib/bluetooth/bluetoothd --compat --noplugin=* --plugin=autopair,hostname,neard,policy
+ExecStart=/usr/lib/bluetooth/bluetoothd --compat --noplugin=gatt,gap,sap,input --plugin=hostname,time
+
+# systemctl daemon-reload
+# systemctl restart bluetooth
